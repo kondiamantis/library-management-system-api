@@ -24,4 +24,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     List<Member> searchMembers(@Param("query") String query);
 
     boolean existsByEmail(String email);
+
+    long countByIsActive(Boolean isActive);
 }
