@@ -1,7 +1,9 @@
 package com.library.librarymanagementsystemapi.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.library.librarymanagementsystemapi.converters.BookGenreConverter;
 import com.library.librarymanagementsystemapi.enums.BookGenre;
+import com.library.librarymanagementsystemapi.enums.BookStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -59,11 +61,23 @@ public class Book {
     @Column(name = "available_copies", nullable = false)
     private Integer availableCopies;
 
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private BookStatus status;
+
     @PrePersist
     @PreUpdate
     private void validateCopies() {
         if (availableCopies > totalCopies) {
             throw new IllegalStateException("Available copies cannot exceed total copies");
         }
+    }
+
+    // Calculate status after loading from DB
+    @PostLoad
+    @PostPersist
+    @PostUpdate
+    private void calculateStatus() {
+        this.status = BookStatus.fromAvailableCopies(this.availableCopies);
     }
 }
