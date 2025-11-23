@@ -4,6 +4,7 @@ import com.library.librarymanagementsystemapi.dtos.BorrowingRequest;
 import com.library.librarymanagementsystemapi.entity.Book;
 import com.library.librarymanagementsystemapi.entity.Borrowing;
 import com.library.librarymanagementsystemapi.entity.Member;
+import com.library.librarymanagementsystemapi.enums.BorrowingStatus;
 import com.library.librarymanagementsystemapi.exception.ResourceNotFoundException;
 import com.library.librarymanagementsystemapi.repository.BorrowingRepository;
 import jakarta.transaction.Transactional;
@@ -56,7 +57,7 @@ public class BorrowingService {
 
         int days = request.getBorrowingDays() != null ? request.getBorrowingDays() : 14;
         borrowing.setDueDate(LocalDate.now().plusDays(days));
-        borrowing.setStatus("BORROWED");
+        borrowing.setStatus(BorrowingStatus.BORROWED);
         borrowing.setLateFee(0.0);
 
         // Decrease available copies
@@ -75,7 +76,7 @@ public class BorrowingService {
 
         // Set return date
         borrowing.setReturnDate(LocalDate.now());
-        borrowing.setStatus("RETURNED");
+        borrowing.setStatus(BorrowingStatus.RETURNED);
 
         // Calculate late fee if overdue
         if (borrowing.getReturnDate().isAfter(borrowing.getDueDate())) {
@@ -120,7 +121,7 @@ public class BorrowingService {
         List<Borrowing> overdueBorrowings = borrowingRepository.findOverdueBorrowings(LocalDate.now());
         for (Borrowing borrowing : overdueBorrowings) {
             if ("BORROWED".equals(borrowing.getStatus())) {
-                borrowing.setStatus("OVERDUE");
+                borrowing.setStatus(BorrowingStatus.RETURNED);
                 borrowingRepository.save(borrowing);
             }
         }

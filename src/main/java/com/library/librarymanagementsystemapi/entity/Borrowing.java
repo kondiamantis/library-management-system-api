@@ -1,6 +1,8 @@
 package com.library.librarymanagementsystemapi.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.library.librarymanagementsystemapi.converters.BorrowingStatusConverter;
+import com.library.librarymanagementsystemapi.enums.BorrowingStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -46,11 +48,10 @@ public class Borrowing {
     @Min(value = 0, message = "Late fee cannot be negative")
     private Double lateFee = 0.0;
 
-    @NotBlank(message = "Status is required")
-    @Pattern(regexp = "BORROWED|RETURNED|OVERDUE",
-            message = "Status must be BORROWED, RETURNED, or OVERDUE")
+    @NotNull(message = "Status is required")
     @Column(nullable = false)
-    private String status;
+    @Convert(converter = BorrowingStatusConverter.class)
+    private BorrowingStatus status;
 
     @PrePersist
     protected void onCreate() {
@@ -61,7 +62,7 @@ public class Borrowing {
             dueDate = borrowDate.plusDays(14); // 14 days borrowing period
         }
         if (status == null) {
-            status = "BORROWED";
+            status = BorrowingStatus.BORROWED;
         }
     }
 
