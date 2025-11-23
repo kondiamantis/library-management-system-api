@@ -1,10 +1,10 @@
 package com.library.librarymanagementsystemapi.entity;
 
+import com.library.librarymanagementsystemapi.converters.BookGenreConverter;
+import com.library.librarymanagementsystemapi.enums.BookGenre;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "books")
@@ -38,9 +38,11 @@ public class Book {
     @Column(name = "publication_year")
     private Integer publicationYear;
 
-    @NotBlank(message = "Genre is required")
-    @Size(max = 50, message = "Genre must not exceed 50 characters")
-    private String genre;
+
+    @NotNull(message = "Genre is required")
+    @Column(name = "genre", length = 50)
+    @Convert(converter = BookGenreConverter.class)
+    private BookGenre genre;
 
     @Size(max = 1000, message = "Description must not exceed 1000 characters")
     @Column(length = 1000)
