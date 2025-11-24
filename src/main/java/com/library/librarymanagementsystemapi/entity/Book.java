@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.library.librarymanagementsystemapi.converters.BookGenreConverter;
 import com.library.librarymanagementsystemapi.enums.BookGenre;
 import com.library.librarymanagementsystemapi.enums.BookStatus;
+import com.library.librarymanagementsystemapi.validation.ValidISBN;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -30,8 +31,7 @@ public class Book {
     private String author;
 
     @NotBlank(message = "ISBN is required")
-//    @Pattern(regexp = "^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$",
-//            message = "Invalid ISBN format")
+    @ValidISBN
     @Column(unique = true, nullable = false)
     private String isbn;
 
