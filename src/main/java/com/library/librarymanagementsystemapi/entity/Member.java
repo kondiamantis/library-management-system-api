@@ -51,11 +51,11 @@ public class Member {
 
     @NotNull(message = "Membership date is required")
     @Column(name = "membership_date", nullable = false)
-    @JsonFormat(pattern = "dd-MM-yyyy")
+//    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate membershipDate;
 
     @Column(name = "membership_expiry_date")
-    @JsonFormat(pattern = "dd-MM-yyyy")
+//    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate membershipExpiryDate;
 
     @Column(name = "is_active", nullable = false)

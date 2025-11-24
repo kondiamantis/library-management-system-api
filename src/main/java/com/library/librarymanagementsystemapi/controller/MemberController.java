@@ -1,5 +1,6 @@
 package com.library.librarymanagementsystemapi.controller;
 
+import com.library.librarymanagementsystemapi.dtos.MemberStatsDTO;
 import com.library.librarymanagementsystemapi.entity.Member;
 import com.library.librarymanagementsystemapi.service.MemberService;
 import jakarta.validation.Valid;
@@ -62,5 +63,26 @@ public class MemberController {
     @GetMapping("/email/{email}")
     public ResponseEntity<Member> getMemberByEmail(@PathVariable String email) {
         return ResponseEntity.ok(memberService.getMemberByEmail(email));
+    }
+
+    // Get member by user ID
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<Member> getMemberByUserId(@PathVariable Long userId) {
+        Member member = memberService.getMemberByUserId(userId);
+        return ResponseEntity.ok(member);
+    }
+
+    // Get member statistics
+    @GetMapping("/{memberId}/stats")
+    public ResponseEntity<MemberStatsDTO> getMemberStats(@PathVariable Long memberId) {
+        MemberStatsDTO stats = memberService.getMemberStats(memberId);
+        return ResponseEntity.ok(stats);
+    }
+
+    // Toggle member status (activate/deactivate)
+    @PutMapping("/{id}/toggle-status")
+    public ResponseEntity<Member> toggleMemberStatus(@PathVariable Long id) {
+        Member member = memberService.toggleMemberStatus(id);
+        return ResponseEntity.ok(member);
     }
 }

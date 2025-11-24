@@ -33,15 +33,15 @@ public class Borrowing {
     private Member member;
 
     @Column(name = "borrow_date", nullable = false)
-    @JsonFormat(pattern = "dd-MM-yyyy")
+//    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate borrowDate;
 
     @Column(name = "due_date", nullable = false)
-    @JsonFormat(pattern = "dd-MM-yyyy")
+//    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate dueDate;
 
     @Column(name = "return_date")
-    @JsonFormat(pattern = "dd-MM-yyyy")
+//    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate returnDate;
 
     @Column(name = "late_fee")
