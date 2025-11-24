@@ -75,4 +75,14 @@ public class BorrowingController {
         borrowingService.deleteBorrowing(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Borrowing>> getBorrowingsByUserId(@PathVariable Long userId) {
+        try {
+            List<Borrowing> borrowings = borrowingService.getBorrowingsByUserId(userId);
+            return ResponseEntity.ok(borrowings);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

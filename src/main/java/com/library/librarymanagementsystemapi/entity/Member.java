@@ -1,6 +1,7 @@
 package com.library.librarymanagementsystemapi.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -19,6 +20,11 @@ public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true)
+    @JsonIgnore  // Prevent circular reference in JSON
+    private User user;
 
     @NotBlank(message = "First name is required")
     @Size(min = 1, max = 50, message = "First name must be between 1 and 50 characters")

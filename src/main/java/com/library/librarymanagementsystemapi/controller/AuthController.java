@@ -3,8 +3,10 @@ package com.library.librarymanagementsystemapi.controller;
 import com.library.librarymanagementsystemapi.dtos.AuthResponse;
 import com.library.librarymanagementsystemapi.dtos.LoginRequest;
 import com.library.librarymanagementsystemapi.dtos.SignupRequest;
+import com.library.librarymanagementsystemapi.entity.Member;
 import com.library.librarymanagementsystemapi.entity.User;
 import com.library.librarymanagementsystemapi.enums.Role;
+import com.library.librarymanagementsystemapi.repository.MemberRepository;
 import com.library.librarymanagementsystemapi.repository.UserRepository;
 import com.library.librarymanagementsystemapi.security.JwtTokenProvider;
 import jakarta.validation.Valid;
@@ -28,6 +30,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final MemberRepository memberRepository;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -55,27 +58,39 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest signupRequest) {
-        if (userRepository.existsByEmail(signupRequest.getEmail())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body("Error: Email is already in use!");
+    public ResponseEntity<String> signup(@RequestBody SignupRequest signupRequest) {
+        // Check if email already exists
+        if (userRepository.findByEmail(signupRequest.getEmail()).isPresent()) {
+            return ResponseEntity.badRequest().body("Email already exists");
         }
 
+        // Create and save user
         User user = new User();
         user.setEmail(signupRequest.getEmail());
         user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
         user.setFirstName(signupRequest.getFirstName());
         user.setLastName(signupRequest.getLastName());
-        user.setRole(Role.MEMBER);  // Default role
+        user.setRole(Role.MEMBER);
         user.setIsActive(true);
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body("User registered successfully!");
+        // Create corresponding Member record and link to user
+        Member member = new Member();
+        member.setUser(savedUser);  // Link to user
+        member.setFirstName(signupRequest.getFirstName());
+        member.setLastName(signupRequest.getLastName());
+        member.setEmail(signupRequest.getEmail());
+        member.setPhoneNumber("0000000000"); // Default - user can update in profile
+        member.setAddress(""); // User can update in profile
+        member.setIsActive(true);
+        // membershipDate and membershipExpiryDate will be set by @PrePersist
+
+        memberRepository.save(member);
+
+        return ResponseEntity.ok("User registered successfully!");
     }
+
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser() {

@@ -6,7 +6,9 @@ import com.library.librarymanagementsystemapi.entity.Borrowing;
 import com.library.librarymanagementsystemapi.entity.Member;
 import com.library.librarymanagementsystemapi.enums.BorrowingStatus;
 import com.library.librarymanagementsystemapi.exception.ResourceNotFoundException;
+import com.library.librarymanagementsystemapi.repository.BookRepository;
 import com.library.librarymanagementsystemapi.repository.BorrowingRepository;
+import com.library.librarymanagementsystemapi.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ public class BorrowingService {
     private final BorrowingRepository borrowingRepository;
     private final BookService bookService;
     private final MemberService memberService;
+    private final BookRepository bookRepository;
+    private final MemberRepository memberRepository;
 
     private static final double LATE_FEE_PER_DAY = 0.50; // 0.50 per day late
 
@@ -34,19 +38,32 @@ public class BorrowingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Borrowing not found with id: " + id));
     }
 
+    @Transactional
     public Borrowing borrowBook(BorrowingRequest request) {
-        // Get book and member
-        Book book = bookService.getBookById(request.getBookId());
-        Member member = memberService.getMemberById(request.getMemberId());
-
-        // Check if member is active
-        if (member.getIsActive() == false){
-            throw new IllegalStateException("Member is not active. Cannot borrow books. ");
+        // Validate that either userId or memberId is provided
+        if (request.getUserId() == null && request.getMemberId() == null) {
+            throw new RuntimeException("Either userId or memberId must be provided");
         }
+
+        // Find book
+        Book book = bookRepository.findById(request.getBookId())
+                .orElseThrow(() -> new RuntimeException("Book not found"));
 
         // Check if book is available
         if (book.getAvailableCopies() <= 0) {
-            throw new IllegalStateException("Book is not available for borrowing");
+            throw new RuntimeException("Book is not available for borrowing");
+        }
+
+        // Find member - either by userId (member borrowing) or memberId (admin borrowing for someone)
+        Member member;
+        if (request.getUserId() != null) {
+            // Member borrowing for themselves - find by user ID
+            member = memberRepository.findByUserId(request.getUserId())
+                    .orElseThrow(() -> new RuntimeException("Member profile not found for this user. Please contact support."));
+        } else {
+            // Admin borrowing for someone - find by member ID
+            member = memberRepository.findById(request.getMemberId())
+                    .orElseThrow(() -> new RuntimeException("Member not found with id: " + request.getMemberId()));
         }
 
         // Create borrowing
@@ -54,15 +71,13 @@ public class BorrowingService {
         borrowing.setBook(book);
         borrowing.setMember(member);
         borrowing.setBorrowDate(LocalDate.now());
-
-        int days = request.getBorrowingDays() != null ? request.getBorrowingDays() : 14;
-        borrowing.setDueDate(LocalDate.now().plusDays(days));
+        borrowing.setDueDate(LocalDate.now().plusDays(request.getBorrowingDays()));
         borrowing.setStatus(BorrowingStatus.BORROWED);
         borrowing.setLateFee(0.0);
 
-        // Decrease available copies
+        // Update book available copies
         book.setAvailableCopies(book.getAvailableCopies() - 1);
-        bookService.updateBook(book.getId(), book);
+        bookRepository.save(book);
 
         return borrowingRepository.save(borrowing);
     }
@@ -130,5 +145,14 @@ public class BorrowingService {
     public void deleteBorrowing(Long id) {
         Borrowing borrowing = getBorrowingById(id);
         borrowingRepository.delete(borrowing);
+    }
+
+    public List<Borrowing> getBorrowingsByUserId(Long userId) {
+        // First, find the member linked to this user
+        Member member = memberRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Member profile not found for this user"));
+
+        // Then get all borrowings for this member
+        return borrowingRepository.findByMemberId(member.getId());
     }
 }
