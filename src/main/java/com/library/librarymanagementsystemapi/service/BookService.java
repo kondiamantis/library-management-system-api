@@ -69,13 +69,18 @@ public class BookService {
     public void deleteBook(Long id) {
         Book book = getBookById(id);
 
-        // Check for active borrowings (BORROWED status only, not RETURNED)
+        // Check for active borrowings from ACTIVE MEMBERS only
         List<Borrowing> activeBorrowings = borrowingRepository.findActiveBorrowingsByBook(id);
 
-        if (!activeBorrowings.isEmpty()) {
+        // Filter to only count borrowings from active members
+        List<Borrowing> activeBorrowingsFromActiveMembers = activeBorrowings.stream()
+                .filter(b -> b.getMember().getIsActive() == true)
+                .collect(java.util.stream.Collectors.toList());
+
+        if (!activeBorrowingsFromActiveMembers.isEmpty()) {
             throw new DataIntegrityViolationException(
                     "Cannot delete book \"" + book.getTitle() + "\" because it has " +
-                            activeBorrowings.size() + " active borrowing record(s). Please return all borrowed copies first."
+                            activeBorrowingsFromActiveMembers.size() + " active borrowing record(s) from active members. Please return all borrowed copies first."
             );
         }
 
@@ -85,8 +90,16 @@ public class BookService {
                 .filter(b -> b.getStatus() == BorrowingStatus.RETURNED)
                 .collect(java.util.stream.Collectors.toList());
 
-        if (!returnedBorrowings.isEmpty()) {
-            borrowingRepository.deleteAll(returnedBorrowings);
+        // Also delete active borrowings from inactive members (they shouldn't have active borrowings)
+        List<Borrowing> activeBorrowingsFromInactiveMembers = activeBorrowings.stream()
+                .filter(b -> b.getMember().getIsActive() == false)
+                .collect(java.util.stream.Collectors.toList());
+
+        List<Borrowing> borrowingsToDelete = new java.util.ArrayList<>(returnedBorrowings);
+        borrowingsToDelete.addAll(activeBorrowingsFromInactiveMembers);
+
+        if (!borrowingsToDelete.isEmpty()) {
+            borrowingRepository.deleteAll(borrowingsToDelete);
         }
 
         // Now safe to delete the book
