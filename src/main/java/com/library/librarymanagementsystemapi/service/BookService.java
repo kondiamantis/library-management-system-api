@@ -1,13 +1,16 @@
 package com.library.librarymanagementsystemapi.service;
 
 import com.library.librarymanagementsystemapi.entity.Book;
+import com.library.librarymanagementsystemapi.entity.Borrowing;
+import com.library.librarymanagementsystemapi.enums.BorrowingStatus;
 import com.library.librarymanagementsystemapi.exception.DuplicateResourceException;
 import com.library.librarymanagementsystemapi.exception.ResourceNotFoundException;
 import com.library.librarymanagementsystemapi.repository.BookRepository;
+import com.library.librarymanagementsystemapi.repository.BorrowingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 
 @Service
@@ -16,6 +19,7 @@ import java.util.List;
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final BorrowingRepository borrowingRepository;
 
     public List<Book> getAllBooks() {
         return bookRepository.findAll();
@@ -64,6 +68,28 @@ public class BookService {
 
     public void deleteBook(Long id) {
         Book book = getBookById(id);
+
+        // Check for active borrowings (BORROWED status only, not RETURNED)
+        List<Borrowing> activeBorrowings = borrowingRepository.findActiveBorrowingsByBook(id);
+
+        if (!activeBorrowings.isEmpty()) {
+            throw new DataIntegrityViolationException(
+                    "Cannot delete book \"" + book.getTitle() + "\" because it has " +
+                            activeBorrowings.size() + " active borrowing record(s). Please return all borrowed copies first."
+            );
+        }
+
+        // Delete all returned borrowings for this book to satisfy foreign key constraint
+        List<Borrowing> allBorrowings = borrowingRepository.findByBookId(id);
+        List<Borrowing> returnedBorrowings = allBorrowings.stream()
+                .filter(b -> b.getStatus() == BorrowingStatus.RETURNED)
+                .collect(java.util.stream.Collectors.toList());
+
+        if (!returnedBorrowings.isEmpty()) {
+            borrowingRepository.deleteAll(returnedBorrowings);
+        }
+
+        // Now safe to delete the book
         bookRepository.delete(book);
     }
 
