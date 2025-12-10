@@ -4,6 +4,7 @@ import com.library.librarymanagementsystemapi.dtos.MemberStatsDTO;
 import com.library.librarymanagementsystemapi.entity.Member;
 import com.library.librarymanagementsystemapi.entity.User;
 import com.library.librarymanagementsystemapi.enums.Role;
+import com.library.librarymanagementsystemapi.exception.DuplicateResourceException;
 import com.library.librarymanagementsystemapi.repository.MemberRepository;
 import com.library.librarymanagementsystemapi.repository.UserRepository;
 import com.library.librarymanagementsystemapi.service.MemberService;
@@ -81,8 +82,23 @@ public class MemberController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Member> updateMember(@PathVariable Long id, @Valid @RequestBody Member member) {
-        return ResponseEntity.ok(memberService.updateMember(id, member));
+    public ResponseEntity<?> updateMember(@PathVariable Long id, @Valid @RequestBody Member member) {
+        try {
+            Member updatedMember = memberService.updateMember(id, member);
+            return ResponseEntity.ok(updatedMember);
+        } catch (DuplicateResourceException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to update member: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")

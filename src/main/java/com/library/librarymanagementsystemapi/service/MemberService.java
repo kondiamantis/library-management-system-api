@@ -3,11 +3,13 @@ package com.library.librarymanagementsystemapi.service;
 import com.library.librarymanagementsystemapi.dtos.MemberStatsDTO;
 import com.library.librarymanagementsystemapi.entity.Borrowing;
 import com.library.librarymanagementsystemapi.entity.Member;
+import com.library.librarymanagementsystemapi.entity.User;
 import com.library.librarymanagementsystemapi.enums.BorrowingStatus;
 import com.library.librarymanagementsystemapi.exception.DuplicateResourceException;
 import com.library.librarymanagementsystemapi.exception.ResourceNotFoundException;
 import com.library.librarymanagementsystemapi.repository.BorrowingRepository;
 import com.library.librarymanagementsystemapi.repository.MemberRepository;
+import com.library.librarymanagementsystemapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final BorrowingRepository borrowingRepository;
+    private final UserRepository userRepository;
 
     public List<Member> getAllMembers() {
         return memberRepository.findAll();
@@ -42,16 +45,32 @@ public class MemberService {
 
     public Member updateMember(Long id, Member memberDetails) {
         Member member = getMemberById(id);
+        User user = member.getUser();
 
-        // Check if email is being changed and if it already exists
-        if (!member.getEmail().equals(memberDetails.getEmail()) &&
-                memberRepository.existsByEmail(memberDetails.getEmail())) {
-            throw new DuplicateResourceException("Member with email " + memberDetails.getEmail() + " already exists");
+        if (user == null) {
+            throw new IllegalStateException("Member has no associated user account");
         }
 
+        // Check if email is being changed
+        String oldEmail = member.getEmail();
+        String newEmail = memberDetails.getEmail();
+        boolean emailChanged = !oldEmail.equals(newEmail);
+
+        if (emailChanged) {
+            // Check if new email already exists in User table (for login)
+            if (userRepository.findByEmail(newEmail).isPresent()) {
+                throw new DuplicateResourceException("Email " + newEmail + " already exists");
+            }
+
+            // Update User entity's email (for login)
+            user.setEmail(newEmail);
+            userRepository.save(user);
+        }
+
+        // Update Member fields
         member.setFirstName(memberDetails.getFirstName());
         member.setLastName(memberDetails.getLastName());
-        member.setEmail(memberDetails.getEmail());
+        member.setEmail(newEmail); // Use the new email
         member.setPhoneNumber(memberDetails.getPhoneNumber());
         member.setAddress(memberDetails.getAddress());
         member.setMembershipDate(memberDetails.getMembershipDate());
