@@ -34,6 +34,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+        // Authenticate user (checks email and password)
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getEmail(),
@@ -42,19 +43,40 @@ public class AuthController {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.generateToken(authentication);
 
+        // Get user from database
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return ResponseEntity.ok(new AuthResponse(
+        // Check if member is active (for MEMBER role only)
+        Boolean isActive = true; // Default to true for admins
+        if (user.getRole() == Role.MEMBER) {
+            Member member = memberRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new RuntimeException("Member not found for user"));
+
+            if (!member.getIsActive()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Your account has been deactivated. Please contact an administrator.");
+            }
+
+            isActive = member.getIsActive();
+        }
+
+        // Generate JWT token
+        String jwt = tokenProvider.generateToken(authentication);
+
+        // Create and return AuthResponse with isActive
+        AuthResponse authResponse = new AuthResponse(
                 jwt,
                 user.getId(),
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
-                user.getRole()
-        ));
+                user.getRole(),
+                isActive  // Include isActive in response
+        );
+
+        return ResponseEntity.ok(authResponse);
     }
 
     @PostMapping("/signup")
@@ -84,13 +106,12 @@ public class AuthController {
         member.setPhoneNumber("0000000000"); // Default - user can update in profile
         member.setAddress(""); // User can update in profile
         member.setIsActive(true);
-        // membershipDate and membershipExpiryDate will be set by @PrePersist
 
+        // membershipDate and membershipExpiryDate will be set by @PrePersist
         memberRepository.save(member);
 
         return ResponseEntity.ok("User registered successfully!");
     }
-
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser() {
@@ -103,3 +124,4 @@ public class AuthController {
         return ResponseEntity.ok(user);
     }
 }
+

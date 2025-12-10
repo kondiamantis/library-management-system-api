@@ -14,13 +14,15 @@ public class AuthResponse {
     private String firstName;
     private String lastName;
     private Role role;
+    private Boolean isActive;
 
-    public AuthResponse(String token, Long id, String email, String firstName, String lastName, Role role) {
+    public AuthResponse(String token, Long id, String email, String firstName, String lastName, Role role, Boolean isActive) {
         this.token = token;
         this.id = id;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
         this.role = role;
+        this.isActive = isActive;
     }
 }
