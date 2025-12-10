@@ -2,11 +2,17 @@ package com.library.librarymanagementsystemapi.controller;
 
 import com.library.librarymanagementsystemapi.dtos.MemberStatsDTO;
 import com.library.librarymanagementsystemapi.entity.Member;
+import com.library.librarymanagementsystemapi.entity.User;
+import com.library.librarymanagementsystemapi.enums.Role;
+import com.library.librarymanagementsystemapi.repository.MemberRepository;
+import com.library.librarymanagementsystemapi.repository.UserRepository;
 import com.library.librarymanagementsystemapi.service.MemberService;
+import com.library.librarymanagementsystemapi.dtos.CreateMemberRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +24,9 @@ import java.util.List;
 public class MemberController {
 
     private final MemberService memberService;
+    private final MemberRepository memberRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping
     public ResponseEntity<List<Member>> getAllMembers() {
@@ -30,8 +39,45 @@ public class MemberController {
     }
 
     @PostMapping
-    public ResponseEntity<Member> createMember(@Valid @RequestBody Member member) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(memberService.createMember(member));
+    public ResponseEntity<?> createMember(@Valid @RequestBody CreateMemberRequest request) {
+
+        try{
+            // Check if email already exists
+            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Email already exists");
+            }
+
+            // Create and save user
+            User user = new User();
+            user.setEmail(request.getEmail());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            user.setRole(Role.MEMBER);
+            user.setIsActive(true);
+
+            User savedUser = userRepository.save(user);
+
+            // Create corresponding Member record
+            Member member = new Member();
+            member.setUser(savedUser);
+            member.setFirstName(request.getFirstName());
+            member.setLastName(request.getLastName());
+            member.setEmail(request.getEmail());
+            member.setPhoneNumber(request.getPhoneNumber());
+            member.setAddress(request.getAddress() != null ? request.getAddress() : "");
+            member.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+
+            Member savedMember = memberRepository.save(member);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedMember);
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to create member:" + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
