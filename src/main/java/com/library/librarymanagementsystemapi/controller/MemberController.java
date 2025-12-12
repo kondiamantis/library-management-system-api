@@ -9,6 +9,11 @@ import com.library.librarymanagementsystemapi.repository.MemberRepository;
 import com.library.librarymanagementsystemapi.repository.UserRepository;
 import com.library.librarymanagementsystemapi.service.MemberService;
 import com.library.librarymanagementsystemapi.dtos.CreateMemberRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +27,7 @@ import java.util.List;
 @RequestMapping("/api/members")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:4200")
+@Tag(name = "Members", description = "Member management endpoints")
 public class MemberController {
 
     private final MemberService memberService;
@@ -30,16 +36,28 @@ public class MemberController {
     private final PasswordEncoder passwordEncoder;
 
     @GetMapping
+    @Operation(summary = "Get all members", description = "Retrieve a list of all library members")
+    @ApiResponse(responseCode = "200", description = "List of members retrieved successfully")
     public ResponseEntity<List<Member>> getAllMembers() {
         return ResponseEntity.ok(memberService.getAllMembers());
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get member by ID", description = "Retrieve a specific member by their ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Member retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Member not found")
+    })
     public ResponseEntity<Member> getMemberById(@PathVariable Long id) {
         return ResponseEntity.ok(memberService.getMemberById(id));
     }
 
     @PostMapping
+    @Operation(summary = "Create new member", description = "Register a new library member with user account")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Member created successfully"),
+        @ApiResponse(responseCode = "400", description = "Email already exists or invalid request")
+    })
     public ResponseEntity<?> createMember(@Valid @RequestBody CreateMemberRequest request) {
 
         try{
@@ -82,6 +100,12 @@ public class MemberController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update member", description = "Update an existing member's information")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Member updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request or duplicate email"),
+        @ApiResponse(responseCode = "404", description = "Member not found")
+    })
     public ResponseEntity<?> updateMember(@PathVariable Long id, @Valid @RequestBody Member member) {
         try {
             Member updatedMember = memberService.updateMember(id, member);
@@ -102,47 +126,75 @@ public class MemberController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete member", description = "Remove a member from the system")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Member deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "Member not found")
+    })
     public ResponseEntity<Void> deleteMember(@PathVariable Long id) {
         memberService.deleteMember(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Member>> searchMembers(@RequestParam String query) {
+    @Operation(summary = "Search members", description = "Search members by name, email, or phone number")
+    @ApiResponse(responseCode = "200", description = "Search results retrieved successfully")
+    public ResponseEntity<List<Member>> searchMembers(@RequestParam @Parameter(description = "Search query") String query) {
         return ResponseEntity.ok(memberService.searchMembers(query));
     }
 
     @GetMapping("/active")
+    @Operation(summary = "Get active members", description = "Retrieve all active members")
+    @ApiResponse(responseCode = "200", description = "Active members retrieved successfully")
     public ResponseEntity<List<Member>> getActiveMembers() {
         return ResponseEntity.ok(memberService.getActiveMembers());
     }
 
     @GetMapping("/inactive")
+    @Operation(summary = "Get inactive members", description = "Retrieve all inactive members")
+    @ApiResponse(responseCode = "200", description = "Inactive members retrieved successfully")
     public ResponseEntity<List<Member>> getInactiveMembers() {
         return ResponseEntity.ok(memberService.getInactiveMembers());
     }
 
     @GetMapping("/email/{email}")
-    public ResponseEntity<Member> getMemberByEmail(@PathVariable String email) {
+    @Operation(summary = "Get member by email", description = "Retrieve a member by their email address")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Member retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Member not found")
+    })
+    public ResponseEntity<Member> getMemberByEmail(@PathVariable @Parameter(description = "Member email") String email) {
         return ResponseEntity.ok(memberService.getMemberByEmail(email));
     }
 
-    // Get member by user ID
     @GetMapping("/user/{userId}")
-    public ResponseEntity<Member> getMemberByUserId(@PathVariable Long userId) {
+    @Operation(summary = "Get member by user ID", description = "Retrieve member information associated with a user account")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Member retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Member not found")
+    })
+    public ResponseEntity<Member> getMemberByUserId(@PathVariable @Parameter(description = "User ID") Long userId) {
         Member member = memberService.getMemberByUserId(userId);
         return ResponseEntity.ok(member);
     }
 
-    // Get member statistics
     @GetMapping("/{memberId}/stats")
-    public ResponseEntity<MemberStatsDTO> getMemberStats(@PathVariable Long memberId) {
+    @Operation(summary = "Get member statistics", description = "Retrieve borrowing statistics for a member")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Member statistics retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Member not found")
+    })
+    public ResponseEntity<MemberStatsDTO> getMemberStats(@PathVariable @Parameter(description = "Member ID") Long memberId) {
         MemberStatsDTO stats = memberService.getMemberStats(memberId);
         return ResponseEntity.ok(stats);
     }
 
-    // Toggle member status (activate/deactivate)
     @PutMapping("/{id}/toggle-status")
+    @Operation(summary = "Toggle member status", description = "Activate or deactivate a member account")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Member status toggled successfully"),
+        @ApiResponse(responseCode = "404", description = "Member not found")
+    })
     public ResponseEntity<Member> toggleMemberStatus(@PathVariable Long id) {
         Member member = memberService.toggleMemberStatus(id);
         return ResponseEntity.ok(member);

@@ -9,6 +9,10 @@ import com.library.librarymanagementsystemapi.enums.Role;
 import com.library.librarymanagementsystemapi.repository.MemberRepository;
 import com.library.librarymanagementsystemapi.repository.UserRepository;
 import com.library.librarymanagementsystemapi.security.JwtTokenProvider;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:4200")
+@Tag(name = "Authentication", description = "Authentication endpoints for login and signup")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -33,6 +38,12 @@ public class AuthController {
     private final MemberRepository memberRepository;
 
     @PostMapping("/login")
+    @Operation(summary = "Login user", description = "Authenticate user with email and password to get JWT token")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Login successful, JWT token returned"),
+        @ApiResponse(responseCode = "400", description = "Invalid credentials"),
+        @ApiResponse(responseCode = "403", description = "Account has been deactivated")
+    })
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         // Authenticate user (checks email and password)
         Authentication authentication = authenticationManager.authenticate(
@@ -80,6 +91,11 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
+    @Operation(summary = "Register new user", description = "Create a new user account and corresponding member record")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "User registered successfully"),
+        @ApiResponse(responseCode = "400", description = "Email already exists or invalid input")
+    })
     public ResponseEntity<String> signup(@RequestBody SignupRequest signupRequest) {
         // Check if email already exists
         if (userRepository.findByEmail(signupRequest.getEmail()).isPresent()) {
@@ -114,6 +130,11 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @Operation(summary = "Get current user", description = "Retrieve the currently authenticated user information")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "User information retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - no valid JWT token")
+    })
     public ResponseEntity<?> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
