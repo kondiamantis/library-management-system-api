@@ -44,17 +44,49 @@ src/
 
 ### Installation
 
-1. Clone the repository
-2. Navigate to the project directory:
+1. **Clone the repository**
    ```bash
+   git clone <repository-url>
    cd library-management-system-api
    ```
-3. Configure database connection in `src/main/resources/application.properties`
-4. Build and run the application:
+
+2. **Set up PostgreSQL Database**
+   - **Option A**: Using command line (if `createdb` is in your PATH):
+     ```bash
+     createdb librarydb
+     ```
+   - **Option B**: Using SQL command in PostgreSQL:
+     ```bash
+     psql -U postgres -c "CREATE DATABASE librarydb;"
+     ```
+   - **Option C**: Using a GUI client like pgAdmin, DBeaver, or DataGrip to create a database named `librarydb`
+
+3. **Configure Database Connection** (if needed)
+   - Edit `src/main/resources/application.properties`
+   - Update the database credentials if different from the defaults:
+     ```properties
+     spring.datasource.url=jdbc:postgresql://localhost:5432/librarydb
+     spring.datasource.username=postgres
+     spring.datasource.password=postgres
+     ```
+
+4. **Build the Project**
    ```bash
    mvn clean install
+   ```
+
+5. **Run the Application**
+   ```bash
    mvn spring-boot:run
    ```
+   
+   The application will start at `http://localhost:8080`
+
+6. **Access the Application**
+   - **API Base URL**: `http://localhost:8080`
+   - **Swagger UI Documentation**: `http://localhost:8080/swagger-ui.html`
+   - **API Docs (JSON)**: `http://localhost:8080/v3/api-docs`
+   - **Test with default credentials** (see Default Users Created section above)
 
 ## Initial Setup
 
@@ -81,11 +113,37 @@ When the application starts, it automatically creates two default users via the 
 
 These users are automatically created during application startup if they don't already exist, allowing you to test the application immediately with these credentials.
 
+### First-Time Setup Checklist
+
+- [ ] Install Java 17 or higher
+- [ ] Install Maven 3.6+
+- [ ] Install PostgreSQL 12+
+- [ ] Create `librarydb` database in PostgreSQL
+- [ ] Update `application.properties` with your database credentials (if different)
+- [ ] Run `mvn clean install`
+- [ ] Run `mvn spring-boot:run`
+- [ ] Access Swagger UI at `http://localhost:8080/swagger-ui.html`
+- [ ] Login with admin credentials to verify setup
+
+## API Documentation
+
+The API is fully documented using **Swagger/OpenAPI 3.0**. After starting the application, you can view the interactive documentation at:
+
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **OpenAPI JSON**: http://localhost:8080/v3/api-docs
+
+The Swagger UI allows you to:
+- Browse all available endpoints
+- See request/response schemas
+- Try endpoints directly from the browser
+- View HTTP status codes and error messages
+
 ## API Endpoints
 
 ### Authentication
 - `POST /api/auth/login` - User login
 - `POST /api/auth/signup` - Register new user
+- `GET /api/auth/me` - Get current user information
 
 ### Books
 - `GET /api/books` - List all books
@@ -109,12 +167,14 @@ These users are automatically created during application startup if they don't a
 
 ## Technology Stack
 
-- **Framework**: Spring Boot
+- **Framework**: Spring Boot 3.5.7
+- **Language**: Java 17
 - **Build Tool**: Maven
-- **Database**: JPA/Hibernate ORM
-- **Authentication**: Spring Security with JWT
-- **Language**: Java
-- **API Documentation**: RESTful API standards
+- **Database**: PostgreSQL with Spring Data JPA/Hibernate ORM
+- **Authentication**: Spring Security with JWT (JSON Web Tokens)
+- **API Documentation**: Swagger/OpenAPI 3.0 (SpringDoc)
+- **Validation**: Jakarta Bean Validation (Annotations)
+- **Project Management**: Lombok for boilerplate reduction
 
 ## Project Components
 
@@ -143,6 +203,36 @@ These users are automatically created during application startup if they don't a
 ```bash
 mvn test
 ```
+
+## Troubleshooting
+
+### Database Connection Issues
+- **Error**: `connection refused` or `could not connect to database`
+  - Ensure PostgreSQL is running
+  - Verify database name is `librarydb`
+  - Check credentials in `application.properties`
+  - Run: `createdb librarydb`
+
+### Port Already in Use
+- **Error**: `Port 8080 is already in use`
+  - Change port in `application.properties`: `server.port=8081`
+  - Or kill the process using port 8080
+
+### Java Version
+- **Error**: `Unsupported class version`
+  - Ensure you're using Java 17 or higher
+  - Check: `java -version`
+
+### Maven Build Issues
+- **Error**: `BUILD FAILURE`
+  - Try: `mvn clean` to remove cached dependencies
+  - Update Maven: `mvn --version`
+
+### Cannot Access Swagger UI
+- **Error**: `404 Not Found` for `swagger-ui.html`
+  - Ensure application started successfully
+  - Verify application is running at `http://localhost:8080`
+  - Check that the SpringDoc dependency is properly installed
 
 ## License
 
